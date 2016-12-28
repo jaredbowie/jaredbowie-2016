@@ -1,9 +1,39 @@
 (ns jaredbowie-2016.core
-  (:require [hiccup.core :refer [html]]))
+  (:require [hiccup.core :refer [html]]
+            [me.raynes.fs :as fs]
+            [clj-time.core :as t]
+            [clj-time.coerce :as tc]
+            [clojure.string :as string]
+            ;;[clj-time.formatter :as tf]
+            ))
 
+
+(def blog-source "/Users/jared/clojureprojects/jaredbowie-2016-data/blog/")
 (def index "target/site/index.html")
 (def blogdir "target/site/blog/")
 
+;;(def custom-formatter (tf/formatter "yyyyMMdd"))
+
+
+(defn capitalize-words
+  "Capitalize every word in a string assuming string is like-this-finish"
+  [s]
+  (->> (string/split (str s) #"-")
+       (map string/capitalize)
+       (string/join " ")))
+
+(defn blog-info []
+  (let [dir-list (fs/list-dir blog-source)]
+    (map (fn [one-file]
+           (let [full-name (fs/name one-file)
+                 c-date (subs full-name 0 10)
+                 title (capitalize-words (subs full-name 11 (.length full-name)))
+                 content (slurp one-file)
+                 m-date (tc/from-long (fs/mod-time (str one-file)))
+                 href "nil.html"
+                 tag "tag"]
+             {:tag tag :href href :content content :c-date c-date :title title :m-date m-date}))
+           dir-list)))
 
 (defn categories []
   (html [:ul
@@ -11,15 +41,14 @@
          [:li [:a {:href "#"} "Web Development"]]
          [:li [:a {:href "#"} "SEO"]]]))
 
-(defn recent []
-  (html
-   [:ul
-    [:li
-     [:a
-      {:href "#"}
-      "Adaptive Vs. Responsive Layouts And Optimal Text Readability"]]
-    [:li [:a {:href "#"} "Web Design is 95% Typography"]]
-    [:li [:a {:href "#"} "Paper by FiftyThree"]]]))
+(defn recent [blog]
+  (let [blog-date (reverse (sort-by :date blog))]
+    (html
+     [:ul
+      [:li [:a {:href "#"}
+            (:title (nth blog-date 0))]]
+      [:li [:a {:href "#"} (:title (nth blog-date 1))]]
+      [:li [:a {:href "#"} (:title (nth blog-date 2))]]])))
 
 (defn music []
   (html
@@ -28,19 +57,82 @@
          [:li [:a {:href "#"} "September 2014"]]
          [:li [:a {:href "#"} "January 2013"]]]))
 
+(defn front-blog [blog]
+  (let [blog-date (reverse (sort-by :date blog))]
+    (html [:main.col-md-8
+           [:article.post.post-1
+            [:header.entry-header
+             [:h1.entry-title
+              [:a
+               {:href (:href (nth blog-date 0))}
+               (:title (nth blog-date 0))]]
+             [:div.entry-meta
+              [:span.post-category [:a {:href "#"} (:tag (nth blog-date 0))]]
+              [:span.post-date
+               [:a
+                {:href "#"}
+                [:time.entry-date
+                 (:c-date (nth blog-date 0))]]]]]
+            [:div.entry-content.clearfix
+             [:p
+              (:content (nth blog-date 0))]]]
+           [:article.post.post-2
+            [:header.entry-header
+             [:h1.entry-title
+              [:a
+               {:href (:href (nth blog-date 1))}
+               (:title (nth blog-date 1))]]
+             [:div.entry-meta
+              [:span.post-category [:a {:href "#"} (:tag (nth blog-date 1))]]
+              [:span.post-date
+               [:a
+                {:href "#"}
+                [:time.entry-date
+                 (:c-date (nth blog-date 1))]]]]]
+            [:div.entry-content.clearfix
+             [:p
+              (:content (nth blog-date 1))]]]
+           [:article.post.post-3
+            [:header.entry-header
+             [:h1.entry-title
+              [:a
+               {:href (:href (nth blog-date 2))}
+               (:title (nth blog-date 2))]]
+             [:div.entry-meta
+              [:span.post-category [:a {:href "#"} (:tag (nth blog-date 2))]]
+              [:span.post-date
+               [:a
+                {:href "#"}
+                [:time.entry-date
+                 (:c-date (nth blog-date 2))]]]]]
+            [:div.entry-content.clearfix
+             [:p
+              (:content (nth blog-date 2))]]]
+#_           [:article.post.post-4
+            [:header.entry-header
+             [:h1.entry-title
+              [:a
+               {:href (:href (nth blog-date 3))}
+               (:title (nth blog-date 3))]]
+             [:div.entry-meta
+              [:span.post-category [:a {:href "#"} (:tag (nth blog-date 3))]]
+              [:span.post-date
+               [:a
+                {:href "#"}
+                [:time.entry-date
+                 (:c-date (nth blog-date 3))]]]]]
+            [:div.entry-content.clearfix
+             [:p
+              (:content (nth blog-date 3))]]]])))
 
-(defn -main
-  "I don't do a whole lot ... yet."
-  [& args]
-  (println "Hello, World!"))
 
 
-(defn test-it []
+(defn index-html [blog]
   (spit index
         (html
-[:html
-  [:head
-   [:title "Black & White"]
+         [:html
+          [:head
+   [:title "Jared Bowie's Site"]
    "<!-- meta -->"
    [:meta {:charset "UTF-8"}]
    [:meta
@@ -75,11 +167,11 @@
         [:div#bs-example-navbar-collapse-1.collapse.navbar-collapse
          [:ul.nav.navbar-nav.navbar-right
           [:li.cl-effect-11
-           [:a {:data-hover "Home", :href "index.html"} "Blog"]]
+           [:a {:data-hover "Home", :href "index.html"} "Home"]]
           [:li.cl-effect-11
-           [:a {:data-hover "Blog", :href "full-width.html"} "Music"]]
-         #_ [:li.cl-effect-11
-           [:a {:data-hover "About", :href "about.html"} "About"]]
+           [:a {:data-hover "Music", :href "music.html"} "Music"]]
+         [:li.cl-effect-11
+           [:a {:data-hover "Links", :href "links.html"} "Link"]]
          #_ [:li.cl-effect-11
            [:a
             {:data-hover "Contact", :href "contact.html"}
@@ -102,109 +194,13 @@
    [:div.content-body
     [:div.container
      [:div.row
-      [:main.col-md-8
-       [:article.post.post-1
-        [:header.entry-header
-         [:h1.entry-title
-          [:a
-           {:href "single.html"}
-           "Adaptive Vs. Responsive Layouts And Optimal Text Readability"]]
-         [:div.entry-meta
-          [:span.post-category [:a {:href "#"} "Web Design"]]
-          [:span.post-date
-           [:a
-            {:href "#"}
-            [:time.entry-date
-             {:datetime "2012-11-09T23:15:57+00:00"}
-             "February 2, 2013"]]]
-          [:span.post-author [:a {:href "#"} "Albert Einstein"]]
-          [:span.comments-link [:a {:href "#"} "4 Comments"]]]]
-        [:div.entry-content.clearfix
-         [:p
-          "Responsive web design offers us a way forward, finally allowing us to design for the ebb and flow of things. There are many variations of passages of Lorem Ipsum available, but the majority have suffered alteration in some form, by injected humour, or randomised words which don’t look even slightly."]
-         [:div.read-more.cl-effect-14
-          [:a.more-link
-           {:href "single.html"}
-           "Continue reading "
-           [:span.meta-nav "→"]]]]]
-       [:article.post.post-2
-        [:header.entry-header
-         [:h1.entry-title
-          [:a
-           {:href "single.html"}
-           "Adaptive Vs. Responsive Layouts And Optimal Text Readability"]]
-         [:div.entry-meta
-          [:span.post-category [:a {:href "#"} "Web Design"]]
-          [:span.post-date
-           [:a
-            {:href "#"}
-            [:time.entry-date
-             {:datetime "2012-11-09T23:15:57+00:00"}
-             "February 2, 2013"]]]
-          [:span.post-author [:a {:href "#"} "Albert Einstein"]]
-          [:span.comments-link [:a {:href "#"} "4 Comments"]]]]
-        [:div.entry-content.clearfix
-         [:p
-          "Responsive web design offers us a way forward, finally allowing us to design for the ebb and flow of things. There are many variations of passages of Lorem Ipsum available, but the majority have suffered alteration in some form, by injected humour, or randomised words which don’t look even slightly."]
-         [:div.read-more.cl-effect-14
-          [:a.more-link
-           {:href "single.html"}
-           "Continue reading "
-           [:span.meta-nav "→"]]]]]
-       [:article.post.post-3
-        [:header.entry-header
-         [:h1.entry-title
-          [:a
-           {:href "single.html"}
-           "Adaptive Vs. Responsive Layouts And Optimal Text Readability"]]
-         [:div.entry-meta
-          [:span.post-category [:a {:href "#"} "Web Design"]]
-          [:span.post-date
-           [:a
-            {:href "#"}
-            [:time.entry-date
-             {:datetime "2012-11-09T23:15:57+00:00"}
-             "February 2, 2013"]]]
-          [:span.post-author [:a {:href "#"} "Albert Einstein"]]
-          [:span.comments-link [:a {:href "#"} "4 Comments"]]]]
-        [:div.entry-content.clearfix
-         [:p
-          "Responsive web design offers us a way forward, finally allowing us to design for the ebb and flow of things. There are many variations of passages of Lorem Ipsum available, but the majority have suffered alteration in some form, by injected humour, or randomised words which don’t look even slightly."]
-         [:div.read-more.cl-effect-14
-          [:a.more-link
-           {:href "single.html"}
-           "Continue reading "
-           [:span.meta-nav "→"]]]]]
-       [:article.post.post-4
-        [:header.entry-header
-         [:h1.entry-title
-          [:a
-           {:href "single.html"}
-           "Adaptive Vs. Responsive Layouts And Optimal Text Readability"]]
-         [:div.entry-meta
-          [:span.post-category [:a {:href "#"} "Web Design"]]
-          [:span.post-date
-           [:a
-            {:href "#"}
-            [:time.entry-date
-             {:datetime "2012-11-09T23:15:57+00:00"}
-             "February 2, 2013"]]]
-          [:span.post-author [:a {:href "#"} "Albert Einstein"]]
-          [:span.comments-link [:a {:href "#"} "4 Comments"]]]]
-        [:div.entry-content.clearfix
-         [:p
-          "Responsive web design offers us a way forward, finally allowing us to design for the ebb and flow of things. There are many variations of passages of Lorem Ipsum available, but the majority have suffered alteration in some form, by injected humour, or randomised words which don’t look even slightly."]
-         [:div.read-more.cl-effect-14
-          [:a.more-link
-           {:href "single.html"}
-           "Continue reading "
-           [:span.meta-nav "→"]]]]]]
+      (front-blog blog)
       [:aside.col-md-4
        [:div.widget.widget-recent-posts
         "\t\t\n\t\t\t\t\t\t\t"
         [:h3.widget-title "Recent Posts"]
         "\t\t\n\t\t\t\t\t\t\t"
-         (recent)]
+         (recent blog)]
        [:div.widget.widget-archives
         "\t\t\n\t\t\t\t\t\t\t"
         [:h3.widget-title "Music"]
@@ -231,3 +227,11 @@
       [:li [:a {:href "full-width.html"} "Music"]]
 #_      [:li [:a {:href "about.html"} "About"]]
   #_    [:li [:a {:href "contact.html"} "Contact"]]]]]]])))
+
+(defn -main
+  "I don't do a whole lot ... yet."
+  [& args]
+  (let [blog (blog-info)]
+    (println blog)
+       (index-html blog
+     )))

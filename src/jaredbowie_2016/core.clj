@@ -5,20 +5,23 @@
             [clj-time.coerce :as tc]
             [clojure.string :as string]
             [jaredbowie-2016.blog :refer :all]
-            ))
+            [jaredbowie-2016.pageparts :refer :all]))
 
 
+;;(def root-relative "/Users/jared/clojureprojects/jaredbowie-2016/target/site")
 (def blog-source "/Users/jared/clojureprojects/jaredbowie-2016-data/blog/")
 (def music-source "/Users/jared/clojureprojects/jaredbowie-2016-data/music/")
-(def spotify-url "https://embed.spotify.com/?uri=spotify%3Auser%3Aonetwothreedog%3Aplaylist%3A7FKiE3NTpVTT32l3vPRwLv")
-(def index "index.html")
-(def blogdir "target/site/blog/")
-(def musicdir "target/site/music/")
-(def bootstrapmin "../css/bootstrap.min.css")
-(def ionicons "../css/ionicons.min.css")
-(def pace "../css/pace.css")
-(def custom "../css/custom.css")
+(def links-file "/Users/jared/clojureprojects/jaredbowie-2016-data/links-file")
+(def index "/index.html")
+
+;;(def blogdir "target/site/blog/")
+;;(def catdir "target/site/blog/cat/")
+;;(def musicdir "target/site/music/")
+
+
 ;;(def custom-formatter (tf/formatter "yyyyMMdd"))
+
+
 
 
 (defn capitalize-words
@@ -47,7 +50,7 @@
                  href (str name-no-date ".html")]
              {:tag tag
               :filename (str name-no-date ".html")
-              :href (str "../blog/"  name-no-date ".html")
+              :href (str root-relative "/blog/posts/"  name-no-date ".html")
               :content content-final
               :c-date c-date
               :title title
@@ -72,73 +75,124 @@
                  content [:iframe {:width "560" :height "315" :src youtube-url :allowfullscreen "allowfullscreen"}]
                  m-date (tc/from-long (fs/mod-time (str one-file)))
                  href "nil.html"]
-             (println youtube-url)
-             {:tag tag :href (str "music/" name-no-date ".html") :content content :c-date c-date :title title :m-date m-date}))
+  ;;           (println youtube-url)
+             {:tag tag :href (str root-relative "/music/" name-no-date ".html") :content content :c-date c-date :title title :m-date m-date}))
 
          dir-list)))
 
-(defn categories [blog]
-  (let [all-tags (set (map #(:tag %) blog))]
-    (println all-tags)
-    (html [:ul
-           (for [one-tag all-tags]
-             [:li [:a {:href (str "../blog/" one-tag ".html")} one-tag]])])))
-
-(defn recent [blog]
-  (let [blog-date (reverse (sort-by :date blog))]
-    (html
-     [:ul
-      [:li [:a {:href (:href (nth blog-date 0))} (:title (nth blog-date 0))]]
-      [:li [:a {:href (:href (nth blog-date 1))} (:title (nth blog-date 1))]]
-      [:li [:a {:href (:href (nth blog-date 2))} (:title (nth blog-date 2))]]])))
-
+(defn create-links-page [blog]
+  (spit (str root-relative "/links.html")
+   (let [links (slurp links-file)]
+     (html
+      [:html
+       (page-head)
+       [:body
+        [:div.container
+         "\t\n\t\t\t"
+         (site-header)]
+        [:div.content-body
+         [:div.container
+          [:div.row
+           [:main.col-md-8
+            [:article.post.post-1
+             [:header.entry-header
+              [:h1.entry-title
+               "Links"]]
+             [:div.entry-content.clearfix
+              links]]]
+           (side-widget blog)]]]
+        [:footer#site-footer
+         [:div.container
+          [:div.row
+           ;;[:div.col-md-12 [:p.copyright "© 2014 ThemeWagon.com"]]
+           ]]]
+        "<!-- Mobile Menu -->"
+        (mobile-menu)]]))))
 
 (defn create-categories [blog]
+  (let [category-set (set (remove #(nil? %) (map #(:tag %) blog)))]
+;;    (println (str "cat-set " category-set))
+    (doseq [one-cat category-set]
+;;      (println one-cat)
+      (let [all-tag (sort-by :c-date (filter #(= (:tag %) one-cat) blog))
+            cat-title (capitalize-words one-cat)]
+;;        (println (str "spitting " (str catdir one-cat ".html")))
+        (spit (str root-relative "/blog/cat/" one-cat ".html")
+              (html
+               [:html
+                (page-head)
+                [:body
+                 [:div.container
+                  "\t\n\t\t\t"
+                  (site-header)]
+                 [:div.content-body
+                  [:div.container
+                   [:div.row
+                    [:main.col-md-8
+                     [:article.post.post-1
+                      [:header.entry-header
+                       [:h1.entry-title
+                        cat-title]]
+                      [:div.entry-content.clearfix
+                       [:ul
+                        (for [one-page all-tag]
+                          [:li [:a {:href (:href one-page)} (:title one-page)]])]]]]
+                    (side-widget blog)]]]
+                 [:footer#site-footer
+                  [:div.container
+                   [:div.row
+                    ;;[:div.col-md-12 [:p.copyright "© 2014 ThemeWagon.com"]]
+                    ]]]
+                 "<!-- Mobile Menu -->"
+                 (mobile-menu)]]))))))
 
-  )
+(defn create-links [blog]
+  (let [category-set (set (remove #(nil? %) (map #(:tag %) blog)))]
+;;    (println (str "cat-set " category-set))
+    (doseq [one-cat category-set]
+;;      (println one-cat)
+      (let [all-tag (sort-by :c-date (filter #(= (:tag %) one-cat) blog))
+            cat-title (capitalize-words one-cat)]
+;;        (println (str "spitting " (str catdir one-cat ".html")))
+        (spit (str root-relative "/blog/cat/" one-cat ".html")
+              (html
+               [:html
+                (page-header)
+                [:body
+                 [:div.container
+                  "\t\n\t\t\t"
+                  (site-header)]
+                 [:div.content-body
+                  [:div.container
+                   [:div.row
+                    [:main.col-md-8
+                     [:article.post.post-1
+                      [:header.entry-header
+                       [:h1.entry-title
+                        cat-title]]
+                      [:div.entry-content.clearfix
+                       [:ul
+                        (for [one-page all-tag]
+                          [:li [:a {:href (:href one-page)} (:title one-page)]])]]]]
+                    (site-side blog)]]]
+                 [:footer#site-footer
+                  [:div.container
+                   [:div.row
+                    ;;[:div.col-md-12 [:p.copyright "© 2014 ThemeWagon.com"]]
+                    ]]]
+                 "<!-- Mobile Menu -->"
+                 (mobile-menu)]]))))))
 
 (defn make-one-blog-post [blog article-filename article-title article-c-date article-tag article-content article-href]
-  (println "spitting " (str blogdir article-filename))
-  (spit (str blogdir article-filename)
+  ;;(println "spitting " (str blogdir article-filename))
+  (spit (str root-relative "/blog/posts/" article-filename)
         (html
          [:html
-          [:head
-   [:title "Jared Bowie's Site"]
-   "<!-- meta -->"
-   [:meta {:charset "UTF-8"}]
-   [:meta
-    {:content "width=device-width, initial-scale=1", :name "viewport"}]
-   "<!-- css -->"
-   [:link {:href bootstrapmin, :rel "stylesheet"}]
-   [:link {:href ionicons, :rel "stylesheet"}]
-   [:link {:href pace, :rel "stylesheet"}]
-   [:link {:href custom, :rel "stylesheet"}]]
+          (page-head)
   [:body
    [:div.container
     "\t\n\t\t\t"
-    [:header#site-header
-     [:div.row
-      [:div.col-md-4.col-sm-5.col-xs-8
-       [:div.logo
-        [:h1 [:a {:href "index.html"} [:b "Jared"] " Bowie"]]]]
-      "<!-- col-md-4 -->"
-      [:div.col-md-8.col-sm-7.col-xs-4
-       [:nav.main-nav
-        {:role "navigation"}
-        [:div.navbar-header
-         [:button#trigger-overlay.navbar-toggle
-          {:type "button"}
-          [:span.ion-navicon]]]
-        [:div#bs-example-navbar-collapse-1.collapse.navbar-collapse
-         [:ul.nav.navbar-nav.navbar-right
-          [:li.cl-effect-11
-           [:a {:data-hover "Home", :href "../blog/index.html"} "Home"]]
-          [:li.cl-effect-11
-           [:a {:data-hover "Music", :href "../music/index.html"} "Music"]]
-         [:li.cl-effect-11
-           [:a {:data-hover "Links", :href "links.html"} "Link"]]]]
-        "<!-- /.navbar-collapse -->"]]
-      "<!-- col-md-8 -->"]]]
+    (site-header)]
    [:div.content-body
     [:div.container
      [:div.row
@@ -157,43 +211,16 @@
         [:div.entry-content.clearfix
          [:p
           article-content]]]]
-      [:aside.col-md-4
-       [:div.widget.widget-recent-posts
-        "\t\t\n\t\t\t\t\t\t\t"
-        [:h3.widget-title "Recent Posts"]
-        "\t\t\n\t\t\t\t\t\t\t"
-        (recent blog)]
-       [:div.widget.widget-category
-        "\t\t\n\t\t\t\t\t\t\t"
-        [:h3.widget-title "Category"]
-        "\t\t\n\t\t\t\t\t\t\t"
-        (categories blog)]
-       [:div.widget.widget-archives
-        "\t\t\n\t\t\t\t\t\t\t"
-        [:h3.widget-title "Music"]
-        "\t\t\n\t\t\t\t\t\t\t"
-        (music)]]]]]
+      (side-widget blog)]]]
    [:footer#site-footer
     [:div.container
      [:div.row
       ;;[:div.col-md-12 [:p.copyright "© 2014 ThemeWagon.com"]]
       ]]]
    "<!-- Mobile Menu -->"
-   [:div.overlay.overlay-hugeinc
-    [:button.overlay-close
-     {:type "button"}
-     [:span.ion-ios-close-empty]]
-    [:nav
-     [:ul
-      [:li [:a {:href "index.html"} "Blog"]]
-      [:li [:a {:href "full-width.html"} "Music"]]
-#_      [:li [:a {:href "about.html"} "About"]]
-  #_    [:li [:a {:href "contact.html"} "Contact"]]]]]]]))
-  )
+   (mobile-menu)]])))
 
-(defn music []
-  (html
-   [:iframe {:src spotify-url :width "300" :height "380" :frameborder "0" :allowtransparency "true"}]))
+
 
 
 (defn front-music [blog page-info previous-page next-page numbers]
@@ -353,13 +380,10 @@
                 [:div.entry-content.clearfix
                  [:p
                   article-content]]]))
-
            (if (not= nil previous-page)
              [:a {:href previous-page} [:div "Backward (in time)"]])
            (if (not= nil next-page)
              [:a {:href next-page} [:div "Forward (in time)"]])])))
-
-
 
 (defn create-page [blog
                    page-info
@@ -367,99 +391,39 @@
                    page-name
                    & [previous-page
                       next-page
-                      numbers]
-                   ]
+                      numbers]]
   "page-name blog, music, links will determine what to display in bottom left section"
   (spit to-file
         (html
          [:html
-          [:head
-   [:title "Jared Bowie's Site"]
-   "<!-- meta -->"
-   [:meta {:charset "UTF-8"}]
-   [:meta
-    {:content "width=device-width, initial-scale=1", :name "viewport"}]
-   "<!-- css -->"
-   [:link {:href bootstrapmin, :rel "stylesheet"}]
-   [:link {:href ionicons, :rel "stylesheet"}]
-   [:link {:href pace, :rel "stylesheet"}]
-   [:link {:href custom, :rel "stylesheet"}]]
-  [:body
-   [:div.container
-    "\t\n\t\t\t"
-    [:header#site-header
-     [:div.row
-      [:div.col-md-4.col-sm-5.col-xs-8
-       [:div.logo
-        [:h1 [:a {:href "index.html"} [:b "Jared"] " Bowie"]]]]
-      "<!-- col-md-4 -->"
-      [:div.col-md-8.col-sm-7.col-xs-4
-       [:nav.main-nav
-        {:role "navigation"}
-        [:div.navbar-header
-         [:button#trigger-overlay.navbar-toggle
-          {:type "button"}
-          [:span.ion-navicon]]]
-        [:div#bs-example-navbar-collapse-1.collapse.navbar-collapse
-         [:ul.nav.navbar-nav.navbar-right
-          [:li.cl-effect-11
-           [:a {:data-hover "Home", :href "../blog/index.html"} "Home"]]
-          [:li.cl-effect-11
-           [:a {:data-hover "Music", :href "../music/index.html"} "Music"]]
-         [:li.cl-effect-11
-           [:a {:data-hover "Links", :href "links.html"} "Link"]]]]
-        "<!-- /.navbar-collapse -->"]]
-      "<!-- col-md-8 -->"]]]
-   [:div.content-body
-    [:div.container
-     [:div.row
-      (cond (= page-name "blog") (front-blog blog previous-page next-page numbers)
-            (= page-name "music") (front-music blog page-info previous-page next-page numbers))
-      [:aside.col-md-4
-       [:div.widget.widget-recent-posts
-        "\t\t\n\t\t\t\t\t\t\t"
-        [:h3.widget-title "Recent Posts"]
-        "\t\t\n\t\t\t\t\t\t\t"
-        (recent blog)]
-       [:div.widget.widget-category
-        "\t\t\n\t\t\t\t\t\t\t"
-        [:h3.widget-title "Category"]
-        "\t\t\n\t\t\t\t\t\t\t"
-        (categories blog)]
-       [:div.widget.widget-archives
-        "\t\t\n\t\t\t\t\t\t\t"
-        [:h3.widget-title "Music"]
-        "\t\t\n\t\t\t\t\t\t\t"
-        (music)]]]]]
-   [:footer#site-footer
-    [:div.container
-     [:div.row
-      ;;[:div.col-md-12 [:p.copyright "© 2014 ThemeWagon.com"]]
-      ]]]
-   "<!-- Mobile Menu -->"
-   [:div.overlay.overlay-hugeinc
-    [:button.overlay-close
-     {:type "button"}
-     [:span.ion-ios-close-empty]]
-    [:nav
-     [:ul
-      [:li [:a {:href "index.html"} "Blog"]]
-      [:li [:a {:href "full-width.html"} "Music"]]
-#_      [:li [:a {:href "about.html"} "About"]]
-  #_    [:li [:a {:href "contact.html"} "Contact"]]]]]]])))
+          (page-head)
+          [:body
+           [:div.container
+            "\t\n\t\t\t"
+            (site-header)]
+           [:div.content-body
+            [:div.container
+             [:div.row
+              (cond (= page-name "blog") (front-blog blog previous-page next-page numbers)
+                    (= page-name "music") (front-music blog page-info previous-page next-page numbers))
+              (side-widget blog)]]]
+           [:footer#site-footer
+            [:div.container
+             [:div.row]]]
+           (mobile-menu)]])))
 
 
 (defn -main
   "main"
   [& args]
-
-
-
   (let [blog (sort-by :c-date (blog-info))
         blog-entry-count (count blog)
         blog-entry-count-fours (/ blog-entry-count 4)
         blog-entry-range (range 1 (+ 1 blog-entry-count-fours))]
+;;;;create links page
 
+    (create-links-page blog)
+;;;;create categories page
 
     (create-categories blog)
 
@@ -473,42 +437,42 @@
       (doseq [x music-entry-range]
         (let [
               page-name (if (= 1 x)
-                          index
-                          (str "page" x ".html"))
+                          (str root-relative "/music" index)
+                          (str root-relative "/music/" "page" x ".html"))
               previous-page (if (< x music-entry-count-tens)
-                              (str "page" (+ 1 x) ".html")
+                              (str root-relative "/music/" "page" (+ 1 x) ".html")
                               nil)
               next-page (cond
                           (= 1 x) nil
                           (= 2 x) index
-                          (> 2 x) (str "page" (- x 1) ".html"))]
-          (println previous-page)
-          (println x)
-          (println music-entry-count-tens)
-          (println (str "music-list " (first music-list)))
+                          (> 2 x) (str root-relative "/music/" "page" (- x 1) ".html"))]
+          ;;(println previous-page)
+          ;;(println x)
+          ;;(println music-entry-count-tens)
+          ;;(println (str "music-list " (first music-list)))
           (let [numbers (range (* (- x 1) 10) (+ 10 (* (- x 1) 10)))]
             ;;(0 1 2 3)
             (if (> (last numbers) music-entry-count)
-              (create-page blog music-list (str musicdir page-name) "music" previous-page next-page (range  (* (- x 1) 10) music-entry-count) )
-              (create-page blog music-list (str musicdir page-name) "music" previous-page next-page numbers))))))
+              (create-page blog music-list page-name "music" previous-page next-page (range  (* (- x 1) 10) music-entry-count) )
+              (create-page blog music-list  page-name "music" previous-page next-page numbers))))))
 
       ;;;create blog page
     (doseq [x blog-entry-range]
       (let [page-name (if (= 1 x)
-                        index
-                        (str "page" x ".html"))
+                        (str root-relative index)
+                        (str root-relative "/blog/pages/" "page" x ".html"))
             previous-page (if (< x blog-entry-count-fours)
-                        (str "page" (+ 1 x) ".html")
+                        (str root-relative "/blog/pages/" "page" (+ 1 x) ".html")
                         nil)
             next-page (cond
                         (= 1 x) nil
-                        (= 2 x) index
-                        (> 2 x) (str "page" (- x 1) ".html"))]
-        (println previous-page)
-        (println x)
-        (println blog-entry-count-fours)
+                        (= 2 x) (str root-relative index)
+                        (> 2 x) (str root-relative "/blog/pages/" "page" (- x 1) ".html"))]
+        ;;(println previous-page)
+        ;;(println x)
+        ;;(println blog-entry-count-fours)
         (let [numbers (range (* (- x 1) 4) (+ 4 (* (- x 1) 4)))]
           ;;(0 1 2 3)
           (if (> (last numbers) blog-entry-count)
-            (create-page blog nil (str blogdir page-name) "blog" previous-page next-page (range  (* (- x 1) 4) blog-entry-count) )
-            (create-page blog nil (str blogdir page-name) "blog" previous-page next-page numbers)))))))
+            (create-page blog nil page-name "blog" previous-page next-page (range  (* (- x 1) 4) blog-entry-count) )
+            (create-page blog nil page-name "blog" previous-page next-page numbers)))))))
